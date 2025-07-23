@@ -76,6 +76,43 @@ data:
     {"name":"admin"}
   group-base-user-payload.json: |
     {"name":"base-user"}
+  vault-groups-payload.json: |
+    {"name":"vault-admins","path":"/vault-admins"}
+  vault-developers-payload.json: |
+    {"name":"vault-developers","path":"/vault-developers"}
+  vault-client-payload.json: |
+    {
+      "clientId": "vault",
+      "name": "HashiCorp Vault",
+      "description": "OIDC client for HashiCorp Vault authentication",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "vault-client-secret-123",
+      "redirectUris": [
+        "https://vault.cnoe.localtest.me/ui/vault/auth/oidc/oidc/callback",
+        "http://localhost:8250/oidc/callback"
+      ],
+      "webOrigins": [
+        "https://vault.cnoe.localtest.me",
+        "http://localhost:8250"
+      ],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "role_list",
+        "profile",
+        "roles",
+        "email",
+        "groups"
+      ]
+    }
   group-mapper-payload.json: |
     {
         "protocol": "openid-connect",
@@ -267,6 +304,18 @@ spec:
                 -X POST --data @/var/config/group-base-user-payload.json \
                 ${KEYCLOAK_URL}/admin/realms/cnoe/groups
               
+              # Create Vault-specific groups
+              echo "Creating Vault-specific groups..."
+              curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X POST --data @/var/config/vault-groups-payload.json \
+                ${KEYCLOAK_URL}/admin/realms/cnoe/groups
+              
+              curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X POST --data @/var/config/vault-developers-payload.json \
+                ${KEYCLOAK_URL}/admin/realms/cnoe/groups
+              
               # Create scope mapper
                 echo 'adding group claim to tokens'
               CLIENT_SCOPE_GROUPS_ID=$(curl -sS -H "Content-Type: application/json" -H "Authorization: bearer ${KEYCLOAK_TOKEN}" -X GET  ${KEYCLOAK_URL}/admin/realms/cnoe/client-scopes | jq -e -r  '.[] | select(.name == "groups") | .id')
@@ -343,6 +392,28 @@ spec:
                 -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
                 -X GET ${KEYCLOAK_URL}/admin/realms/cnoe/clients/${CLIENT_ID} | jq -e -r '.secret')
               
+              echo "creating Vault client"
+              curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X POST --data @/var/config/vault-client-payload.json \
+                ${KEYCLOAK_URL}/admin/realms/cnoe/clients
+              
+              CLIENT_ID=$(curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X GET ${KEYCLOAK_URL}/admin/realms/cnoe/clients | jq -e -r  '.[] | select(.clientId == "vault") | .id')
+              
+              CLIENT_SCOPE_GROUPS_ID=$(curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X GET  ${KEYCLOAK_URL}/admin/realms/cnoe/client-scopes | jq -e -r  '.[] | select(.name == "groups") | .id')
+              
+              curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X PUT  ${KEYCLOAK_URL}/admin/realms/cnoe/clients/${CLIENT_ID}/default-client-scopes/${CLIENT_SCOPE_GROUPS_ID}
+              
+              VAULT_CLIENT_SECRET=$(curl -sS -H "Content-Type: application/json" \
+                -H "Authorization: bearer ${KEYCLOAK_TOKEN}" \
+                -X GET ${KEYCLOAK_URL}/admin/realms/cnoe/clients/${CLIENT_ID} | jq -e -r '.secret')
+              
               ARGOCD_PASSWORD=$(./kubectl -n argocd get secret argocd-initial-admin-secret -o go-template='{{.data.password | base64decode }}')
               
               ARGOCD_SESSION_TOKEN=$(curl -k -sS http://argocd-server.argocd.svc.cluster.local:443/api/v1/session -H 'Content-Type: application/json' -d "{\"username\":\"admin\",\"password\":\"${ARGOCD_PASSWORD}\"}" | jq -r .token)
@@ -360,6 +431,8 @@ spec:
                 ARGOCD_SESSION_TOKEN: ${ARGOCD_SESSION_TOKEN}
                 BACKSTAGE_CLIENT_SECRET: ${BACKSTAGE_CLIENT_SECRET}
                 BACKSTAGE_CLIENT_ID: backstage
+                VAULT_CLIENT_SECRET: ${VAULT_CLIENT_SECRET}
+                VAULT_CLIENT_ID: vault
               " > /tmp/secret.yaml
               
               ./kubectl apply -f /tmp/secret.yaml

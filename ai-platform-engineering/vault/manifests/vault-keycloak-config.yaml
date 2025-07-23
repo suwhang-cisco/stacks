@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-keycloak-config
+  namespace: vault
+type: Opaque
+stringData:
+  client-secret: "vault-client-secret-123"
+  discovery-url: "https://keycloak.cnoe.localtest.me/keycloak/realms/cnoe"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-keycloak-setup
+  namespace: vault
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  template:
+    spec:
+      serviceAccountName: vault-config
+      restartPolicy: OnFailure
+      volumes:
+        - name: vault-policies
+          configMap:
+            name: vault-policies
+      containers:
+      - name: vault-keycloak-config
+        image: docker.io/library/ubuntu:22.04
+        volumeMounts:
+          - name: vault-policies
+            mountPath: /etc/vault/policies
+            readOnly: true
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          #!/bin/bash
+          set -ex -o pipefail
+
+          # Install required tools
+          echo "Installing required tools..."
+          apt-get update -qq || { echo "ERROR: apt-get update failed"; exit 1; }
+          apt-get install -y -qq curl netcat-openbsd software-properties-common wget jq libcap2-bin || { echo "ERROR: package installation failed"; exit 1; }
+          
+          # Install Vault CLI
+          echo "Installing Vault CLI..."
+          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/hashicorp.list
+          apt-get update
+          apt-get install vault -y
+          setcap cap_ipc_lock= /usr/bin/vault
+          
+          # Install kubectl
+          echo "Installing kubectl..."
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" || { echo "ERROR: kubectl download failed"; exit 1; }
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+
+          # Wait for Vault to be ready
+          echo "Waiting for Vault to be ready..."
+          until nc -z vault 8200; do
+            echo "Waiting for Vault service..."
+            sleep 5
+          done
+
+          # Wait for the root token to be available
+          until kubectl get secret vault-root-token -n vault >/dev/null 2>&1; do
+            echo "Waiting for vault-root-token secret to be created..."
+            sleep 5
+          done
+
+          echo "Vault root token available. Authenticating..."
+          # Authenticate to Vault
+          export VAULT_ADDR="http://vault:8200"
+          set +x # Disable logging for this line
+          export VAULT_TOKEN=$(kubectl get secret vault-root-token -n vault -o jsonpath='{.data.token}' | base64 -d)
+          set -x # Re-enable logging
+
+          # Load policies from files
+          echo "Loading Vault policies from files..."
+          vault policy write guest /etc/vault/policies/guest-policy.hcl
+          vault policy write developer /etc/vault/policies/developer-policy.hcl  
+          vault policy write admin /etc/vault/policies/admin-policy.hcl
+
+          # Enable authentication methods
+          echo "Setting up authentication methods..."
+          
+          # Enable userpass auth method
+          vault auth enable userpass || echo "Userpass auth already enabled."
+          
+          # Enable OIDC auth method for Keycloak integration
+          vault auth enable oidc || echo "OIDC auth already enabled."
+
+          # Create sample users
+          echo "Creating sample users..."
+          
+          # Create a guest user
+          vault write auth/userpass/users/guest \
+            password="guest-password-123" \
+            policies="guest"
+          
+          # Create a developer user
+          vault write auth/userpass/users/developer \
+            password="dev-password-123" \
+            policies="developer"
+          
+          # Create an admin user
+          vault write auth/userpass/users/admin \
+            password="admin-password-123" \
+            policies="admin"
+
+          # Configure OIDC for Keycloak
+          echo "Configuring OIDC for Keycloak integration..."
+          
+          KEYCLOAK_DISCOVERY_URL=$(kubectl get secret vault-keycloak-config -n vault -o jsonpath='{.data.discovery-url}' | base64 -d)
+          KEYCLOAK_CLIENT_SECRET=$(kubectl get secret vault-keycloak-config -n vault -o jsonpath='{.data.client-secret}' | base64 -d)
+          
+          vault write auth/oidc/config \
+            oidc_discovery_url="${KEYCLOAK_DISCOVERY_URL}" \
+            oidc_client_id="vault" \
+            oidc_client_secret="${KEYCLOAK_CLIENT_SECRET}" \
+            default_role="guest"
+          
+          # Create OIDC role mappings
+          vault write auth/oidc/role/guest \
+            bound_audiences="vault" \
+            allowed_redirect_uris="https://vault.cnoe.localtest.me/ui/vault/auth/oidc/oidc/callback,http://localhost:8250/oidc/callback" \
+            user_claim="sub" \
+            policies="guest"
+          
+          vault write auth/oidc/role/developer \
+            bound_audiences="vault" \
+            allowed_redirect_uris="https://vault.cnoe.localtest.me/ui/vault/auth/oidc/oidc/callback,http://localhost:8250/oidc/callback" \
+            user_claim="sub" \
+            bound_claims='{"groups": ["vault-developers"]}' \
+            policies="developer"
+          
+          vault write auth/oidc/role/admin \
+            bound_audiences="vault" \
+            allowed_redirect_uris="https://vault.cnoe.localtest.me/ui/vault/auth/oidc/oidc/callback,http://localhost:8250/oidc/callback" \
+            user_claim="sub" \
+            bound_claims='{"groups": ["vault-admins"]}' \
+            policies="admin"
+
+          echo "Vault-Keycloak integration configured successfully!"
+          echo "Available authentication methods:"
+          echo "  - Username/Password: guest, developer, admin users created"
+          echo "  - OIDC: Keycloak integration configured with group-based role mapping"
+          echo "  - Groups: vault-developers -> developer policy, vault-admins -> admin policy"

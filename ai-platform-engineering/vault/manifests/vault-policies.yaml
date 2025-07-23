@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-policies
+  namespace: vault
+data:
+  guest-policy.hcl: |
+    # Guest policy - read-only access to specific paths
+    path "secret/data/ai-platform-engineering/*" {
+      capabilities = ["read"]
+    }
+
+    path "secret/metadata/ai-platform-engineering/*" {
+      capabilities = ["read"]
+    }
+
+    # Allow guests to see what secrets exist
+    path "secret/metadata" {
+      capabilities = ["list"]
+    }
+
+    # Allow token self-inspection
+    path "auth/token/lookup-self" {
+      capabilities = ["read"]
+    }
+
+  developer-policy.hcl: |
+    # Developer policy - read/write access to dev resources
+    path "secret/data/ai-platform-engineering/dev/*" {
+      capabilities = ["create", "read", "update", "delete"]
+    }
+
+    path "secret/metadata/ai-platform-engineering/dev/*" {
+      capabilities = ["list", "read", "delete"]
+    }
+
+    path "secret/data/ai-platform-engineering/shared/*" {
+      capabilities = ["read"]
+    }
+
+    path "secret/metadata/ai-platform-engineering/shared/*" {
+      capabilities = ["read"]
+    }
+
+    # Allow token self-inspection and renewal
+    path "auth/token/lookup-self" {
+      capabilities = ["read"]
+    }
+
+    path "auth/token/renew-self" {
+      capabilities = ["update"]
+    }
+
+  admin-policy.hcl: |
+    # Admin policy - full access to ai-platform-engineering paths
+    path "secret/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
+    path "auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+    path "sys/policies/acl/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
+
+    # Full token management
+    path "auth/token/*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+    # System management
+    path "sys/auth/*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+    path "sys/mounts/*" {
+      capabilities = ["create", "read", "update", "delete", "list"]
+    }
