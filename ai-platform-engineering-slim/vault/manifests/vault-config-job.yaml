@@ -102,7 +102,8 @@ spec:
           vault kv put secret/ai-platform-engineering/jira-secret \
             ATLASSIAN_TOKEN="" \
             ATLASSIAN_EMAIL="" \
-            ATLASSIAN_API_URL=""
+            ATLASSIAN_API_URL="" \
+            ATLASSIAN_VERIFY_SSL="true"
           
           # Backstage agent secrets (empty data as per example)
           echo "Creating backstage-secret..."
