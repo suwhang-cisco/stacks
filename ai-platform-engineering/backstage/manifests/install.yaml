@@ -293,7 +293,7 @@ metadata:
   labels:
     app: postgresql
   name: postgresql
-  namespace: backstages
+  namespace: backstage
   annotations:
     argocd.argoproj.io/sync-wave: "10"
 spec:
