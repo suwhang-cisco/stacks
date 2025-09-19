@@ -226,7 +226,6 @@ metadata:
   namespace: backstage
   annotations:
     argocd.argoproj.io/sync-wave: "5"
-    argocd.argoproj.io/hook: PreSync
 spec:
   template:
     spec:
