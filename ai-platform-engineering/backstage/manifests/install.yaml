@@ -233,11 +233,20 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: secret-generator
-        image: bitnami/kubectl:latest
-        command:
-        - /bin/bash
-        - -c
+        image: docker.io/library/ubuntu:22.04
+        command: ["/bin/bash", "-c"]
+        args:
         - |
+          #!/bin/bash
+
+          set -ex -o pipefail
+
+          # Install kubectl
+          echo "Installing kubectl..."
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" || { echo "ERROR: kubectl download failed"; exit 1; }
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+
           # Generate random secrets
           AUTH_API_TOKEN=$(openssl rand -base64 32)
           BACKEND_AUTH_SECRET=$(openssl rand -base64 32)
