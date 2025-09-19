@@ -15,14 +15,12 @@ spec:
       helm:
         valueFiles:
           - $values/helm/values.yaml
-    # Values files from Git repository (your custom branch)
     - repoURL: https://github.com/cnoe-io/ai-platform-engineering.git
       targetRevision: idpbuilder-values-v0.2.0
       ref: values
-    # Raw manifests from Git
-    - repoURL: https://github.com/suwhang-cisco/stacks.git
+    - repoURL: cnoe://ai-platform-engineering
       targetRevision: main
-      path: ai-platform-engineering/ai-platform-engineering/manifests
+      path: manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: ai-platform-engineering
