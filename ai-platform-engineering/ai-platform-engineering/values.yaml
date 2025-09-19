@@ -4,14 +4,16 @@ global:
   enabledSubAgents:
     argocd: true
     backstage: true
-    confluence: true
+    confluence: false
     github: true
-    jira: true
-    pagerduty: true
-    slack: true
+    jira: false
+    pagerduty: false
+    slack: false
+    aws: false
+    weather: true
 
   slim:
-    enabled: true
+    enabled: false
     endpoint: "http://ai-platform-engineering-slim:46357"
     transport: "slim"
 
@@ -382,7 +384,7 @@ agent-slack:
 
 # Backstage plugin agent forge
 backstage-plugin-agent-forge:
-  enabled: true
+  enabled: false
   nameOverride: "backstage-plugin-agent-forge"
   image:
     repository: "ghcr.io/cnoe-io/backstage-plugin-agent-forge"
@@ -398,7 +400,7 @@ backstage-plugin-agent-forge:
         protocol: TCP
 
 graphrag:
-  enabled: true
+  enabled: false
   neo4jNameOverride: "graphrag-neo4j" # This needs to match the value in neo4j.fullnameOverride
 
 # neo4j is used by graphrag to store the graph data. If graphrag.enabled is false, neo4j is not deployed.
@@ -431,7 +433,7 @@ neo4j:
 
 # KB-RAG Stack - Complete stack including web, server, agent, Redis, and Milvus
 kb-rag-stack:
-  enabled: true
+  enabled: false
 
   # KB-RAG Web configuration
   kb-rag-web:
