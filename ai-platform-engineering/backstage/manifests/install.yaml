@@ -207,6 +207,8 @@ data:
               password: ${ARGOCD_ADMIN_PASSWORD}
     argoWorkflows:
         baseUrl: ${ARGO_WORKFLOWS_URL}
+    agentForge:
+      baseUrl: ${AGENT_FORGE_URL}
 ---
 apiVersion: v1
 kind: Secret
@@ -324,7 +326,7 @@ spec:
                 name: argocd-credentials
             - secretRef:
                 name: backstage-auth-secrets
-          image: ghcr.io/cnoe-io/backstage-app:9232d633b2698fffa6d0a73b715e06640d170162
+          image: ghcr.io/suwhang-cisco/backstage-app:66ef030f9b7282f16df76f348898e3712dff1f8b
           name: backstage
           ports:
             - containerPort: 7007
@@ -448,6 +450,7 @@ spec:
         KEYCLOAK_CLIENT_SECRET: "{{.BACKSTAGE_CLIENT_SECRET}}"
         ARGOCD_AUTH_TOKEN: "argocd.token={{.ARGOCD_SESSION_TOKEN}}"
         ARGO_CD_URL: 'https://argocd-server.argocd.svc.cluster.local/api/v1/'
+        AGENT_FORGE_URL: https://cnoe.localtest.me:8443/ai-platform-engineering
   data:
     - secretKey: ARGOCD_SESSION_TOKEN
       remoteRef:
