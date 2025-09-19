@@ -11,6 +11,7 @@ global:
     slack: false
     aws: false
     weather: true
+    splunk: false
 
   slim:
     enabled: false
