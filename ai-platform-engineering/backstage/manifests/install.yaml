@@ -74,12 +74,14 @@ data:
     organization:
       name: CNOE
     backend:
-      # Used for enabling authentication, secret is shared by all backend plugins
-      # See https://backstage.io/docs/tutorials/backend-to-backend-auth for
-      # information on the format
-      # auth:
-      #   keys:
-      #     - secret: ${BACKEND_SECRET}
+      auth:
+        externalAccess:
+        - options:
+            subject: dev-api-access
+            token: ${AUTH_API_TOKEN_TEST}
+          type: static
+        keys:
+        - secret: ${BACKEND_AUTH_SECRET}
       baseUrl: https://cnoe.localtest.me:8443
       listen:
         port: 7007
@@ -197,6 +199,38 @@ stringData:
     \   skipMetricsLookup: true\n    serviceAccountToken: \n      $file: /var/run/secrets/kubernetes.io/serviceaccount/token\n
     \   caData: \n      $file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n"
 ---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backstage-auth-secret-generator
+  namespace: backstage
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/hook: PreSync
+spec:
+  template:
+    spec:
+      serviceAccountName: backstage
+      restartPolicy: OnFailure
+      containers:
+      - name: secret-generator
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Generate random secrets
+          AUTH_API_TOKEN=$(openssl rand -base64 32)
+          BACKEND_AUTH_SECRET=$(openssl rand -base64 32)
+
+          # Create the secret
+          kubectl create secret generic backstage-auth-secrets \
+            --from-literal=AUTH_API_TOKEN_TEST="$AUTH_API_TOKEN" \
+            --from-literal=BACKEND_AUTH_SECRET="$BACKEND_AUTH_SECRET" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          echo "Auth secrets generated successfully"
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -260,6 +294,8 @@ spec:
                 name: gitea-credentials
             - secretRef:
                 name: argocd-credentials
+            - secretRef:
+                name: backstage-auth-secrets
           image: ghcr.io/cnoe-io/backstage-app:9232d633b2698fffa6d0a73b715e06640d170162
           name: backstage
           ports:
