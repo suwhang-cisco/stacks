@@ -14,13 +14,11 @@ spec:
       targetRevision: 0.2.2
       helm:
         valueFiles:
-          - $values/helm/values.yaml
-    - repoURL: https://github.com/cnoe-io/ai-platform-engineering.git
-      targetRevision: idpbuilder-values-v0.2.0
-      ref: values
+          - $values/values.yaml
     - repoURL: cnoe://ai-platform-engineering
       targetRevision: main
       path: manifests
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: ai-platform-engineering
