@@ -184,7 +184,7 @@ spec:
           echo "Writing token to secret 'argocd-admin-token' in namespace 'vault'..."
           kubectl -n vault create secret generic argocd-admin-token \
             --from-literal=token="$TOKEN" \
-            --from-literal=apiUrl="$API_URL" \
+            --from-literal=apiUrl="http://argocd-server.argocd.svc:443" \
             --dry-run=client -o yaml | kubectl apply -f -
           echo "Done."
 
