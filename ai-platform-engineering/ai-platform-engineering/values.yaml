@@ -147,10 +147,11 @@ agent-argocd:
   image:
     repository: "ghcr.io/cnoe-io/agent-argocd"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-argocd"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
@@ -182,10 +183,11 @@ agent-backstage:
   image:
     repository: "ghcr.io/cnoe-io/agent-backstage"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-backstage"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
@@ -211,10 +213,11 @@ agent-confluence:
   image:
     repository: "ghcr.io/cnoe-io/agent-confluence"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-confluence"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
@@ -252,6 +255,7 @@ agent-github:
   image:
     repository: "ghcr.io/cnoe-io/agent-github"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     useRemoteMcpServer: true
   agentSecrets:
@@ -270,10 +274,11 @@ agent-jira:
   image:
     repository: "ghcr.io/cnoe-io/agent-jira"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-jira"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
@@ -311,10 +316,11 @@ agent-pagerduty:
   image:
     repository: "ghcr.io/cnoe-io/agent-pagerduty"
     pullPolicy: "Always"
+    tag: "0.1.15"
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-pagerduty"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
@@ -343,7 +349,7 @@ agent-slack:
   mcp:
     image:
       repository: "ghcr.io/cnoe-io/mcp-slack"
-      tag: "stable"
+      tag: "0.1.15"
       pullPolicy: "Always"
     mode: "http" # Options: stdio, http
     port: 8000
