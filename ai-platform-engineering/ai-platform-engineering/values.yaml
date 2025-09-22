@@ -131,8 +131,8 @@ global:
 supervisor-agent:
   nameOverride: "supervisor-agent"
   image:
-    repository: "ghcr.io/cnoe-io/ai-platform-engineering"
-    tag: "stable"
+    repository: "ghcr.io/cnoe-io/prebuild/ai-platform-engineering"
+    tag: "supervisor-hot-fix-2"
     pullPolicy: "Always"
     args: ["platform-engineer"]
   env:
