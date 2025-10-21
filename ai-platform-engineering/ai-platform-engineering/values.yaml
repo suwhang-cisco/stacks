@@ -10,7 +10,7 @@ global:
     pagerduty: false
     slack: false
     aws: false
-    weather: true
+    weather: false
     splunk: false
 
   slim:
