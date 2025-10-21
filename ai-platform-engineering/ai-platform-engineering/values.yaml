@@ -139,6 +139,9 @@ supervisor-agent:
     EXTERNAL_URL: "https://cnoe.localtest.me:8443/ai-platform-engineering"  # Agent url for the client
     SKIP_AGENT_CONNECTIVITY_CHECK: "false"
     AGENT_CONNECTIVITY_ENABLE_BACKGROUND: "true"
+    ENABLE_ARGOCD: "true"
+    ENABLE_BACKSTAGE: "true"
+    ENABLE_GITHUB: "true"
   multiAgentConfig:
     protocol: "a2a"
     port: "8000"
